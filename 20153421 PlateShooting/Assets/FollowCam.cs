@@ -11,13 +11,21 @@ public class FollowCam : MonoBehaviour
 
     Animation anim = Animation.Idle;
 
-    public Transform targetPos;
+    [Header("Must be Setted")]
+    public Transform target;
 
-    public float cameraMoveSpeed = 120.0f;
-    public float clampAngle = 80.0f;
+    [Header("Camer Setting")]
+    public float cameraFollowSpeed = 110.0f;
+    public Vector3 dist = new Vector3(1f, 2.15f, -5f);
+    public bool smoothMovement = true;
+    public float smoothSpeed =5.0f;
+
+    [Range(1,200)]
     public float sensitivty = 150.0f;
 
-    public float zoomSpeed = 10.0f;
+    Transform cameraPoint;
+
+    float zoomSpeed = 10.0f;
     float startTime=0;
     float timeDuration = .8f;
 
@@ -25,22 +33,54 @@ public class FollowCam : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        cameraPoint = transform.Find("CameraPoint");
+
+        SpawnCamera();
     }
 
     private void LateUpdate()
     {
-        Follow();
-        FollowMouse();
+        FollowTarget();
+        RotateByMouse();
         Zoom();      
     }
 
-    void Follow()
+    void SpawnCamera()
     {
-        transform.position = Vector3.MoveTowards(transform.position,
-            targetPos.position, cameraMoveSpeed * Time.deltaTime);
+        GameObject go = new GameObject();
+        Camera.main.GetComponent<AudioListener>().enabled = false;
+        Camera.main.tag = "Untagged";
+
+        go.tag = "MainCamera";
+        go.name = "Main Camera";
+
+        CameraScript cs= go.AddComponent<CameraScript>();
+        go.AddComponent<Camera>();
+        go.AddComponent<AudioListener>();
+
+        cs.FollowCam = this;
+        cs.Target = cameraPoint;
+        cs.enabled = true;
     }
 
-    void FollowMouse()
+    void FollowTarget()
+    {
+        
+          
+        if (PlayerController.Instance.mode == PlayerMode.Zoom) return;
+
+        cameraPoint.localPosition = dist;
+
+        /*transform.position = Vector3.Lerp(transform.position,
+                        target.position, cameraFollowSpeed * Time.deltaTime);*/
+
+        transform.position = Vector3.MoveTowards(transform.position,
+                            target.position, cameraFollowSpeed * Time.deltaTime);
+
+    }
+
+    void RotateByMouse()
     {
         float axisX = Input.GetAxis("Mouse X");
         float axisY = Input.GetAxis("Mouse Y");
@@ -63,23 +103,43 @@ public class FollowCam : MonoBehaviour
             return;
         }
 
-        if (anim == Animation.Idle)
+
+        switch (anim)
         {
-            startTime = Time.time;
-            anim = Animation.Moving;
-        }
+            case Animation.Idle:
 
-        float timer = (Time.time - startTime) / timeDuration;
-        timer = Mathf.Clamp01(timer);
+                startTime = Time.time;
+                anim = Animation.Moving;
 
-        transform.position =
-            Vector3.Lerp(transform.position,
-            transform.position + transform.forward * 2.0f, timer);
+                break;
+            case Animation.Moving:
+                float timer = (Time.time - startTime) / timeDuration;
+                timer = Mathf.Clamp01(timer);
 
-        if (timer >= 1f)
-        {
-            anim = Animation.Target;
-            startTime = 0;
+                transform.position =
+                    Vector3.Lerp(transform.position,
+                    transform.position + target.transform.forward, timer * zoomSpeed);
+                
+                if (timer >= 1f)
+                {
+                    anim = Animation.Target;
+                    startTime = 0;
+                }
+
+                break;
+
+            case Animation.Target:
+
+                Vector3 pos = transform.position + target.transform.forward * 2.0f;
+
+                if (pos.magnitude >= 4.0f)
+                {
+                    pos = pos.normalized * 4.0f;
+                }
+
+                transform.position = target.transform.position + pos;
+
+                break;
         }
     }
 }
