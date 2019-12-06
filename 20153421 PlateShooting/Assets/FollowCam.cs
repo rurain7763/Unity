@@ -65,9 +65,7 @@ public class FollowCam : MonoBehaviour
     }
 
     void FollowTarget()
-    {
-        
-          
+    {         
         if (PlayerController.Instance.mode == PlayerMode.Zoom) return;
 
         cameraPoint.localPosition = dist;
@@ -103,7 +101,6 @@ public class FollowCam : MonoBehaviour
             return;
         }
 
-
         switch (anim)
         {
             case Animation.Idle:
@@ -112,15 +109,19 @@ public class FollowCam : MonoBehaviour
                 anim = Animation.Moving;
 
                 break;
+
             case Animation.Moving:
+
                 float timer = (Time.time - startTime) / timeDuration;
                 timer = Mathf.Clamp01(timer);
 
+                Vector3 zoomPoint = (target.transform.position + target.transform.forward)* 2.0f;
+
                 transform.position =
-                    Vector3.Lerp(transform.position,
-                    transform.position + target.transform.forward, timer * zoomSpeed);
-                
-                if (timer >= 1f)
+                    Vector3.Lerp(transform.position, zoomPoint, timer * zoomSpeed);
+
+
+                if (Vector3.Distance(transform.position,zoomPoint) >= 0.01f)
                 {
                     anim = Animation.Target;
                     startTime = 0;
@@ -130,14 +131,9 @@ public class FollowCam : MonoBehaviour
 
             case Animation.Target:
 
-                Vector3 pos = transform.position + target.transform.forward * 2.0f;
+                Vector3 pos = target.transform.position + target.transform.forward * 2.0f;
 
-                if (pos.magnitude >= 4.0f)
-                {
-                    pos = pos.normalized * 4.0f;
-                }
-
-                transform.position = target.transform.position + pos;
+                transform.position = pos;
 
                 break;
         }
