@@ -24,10 +24,16 @@ public class FollowCam : MonoBehaviour
     public float sensitivty = 150.0f;
 
     Transform cameraPoint;
+    CameraScript cs;
 
-    float zoomSpeed = 10.0f;
-    float startTime=0;
-    float timeDuration = .8f;
+    
+    [Header("X: right , Y: forward")]
+    public Vector2 zoomPosOffset = new Vector3(0.5f, 2.0f);
+    public float zoomSpeed = 10.0f;
+
+    Vector3 zoomPoint;
+    //float startTime=0;
+    //float timeDuration = .8f;
 
     private void Awake()
     {
@@ -59,6 +65,7 @@ public class FollowCam : MonoBehaviour
         go.AddComponent<Camera>();
         go.AddComponent<AudioListener>();
 
+        this.cs = cs;
         cs.FollowCam = this;
         cs.Target = cameraPoint;
         cs.enabled = true;
@@ -93,10 +100,13 @@ public class FollowCam : MonoBehaviour
         transform.eulerAngles = curRot;
     }
 
+
     void Zoom()
     {
         if (PlayerController.Instance.mode != PlayerMode.Zoom)
         {
+
+            cs.lookTarget = true;
             anim = Animation.Idle;
             return;
         }
@@ -104,34 +114,42 @@ public class FollowCam : MonoBehaviour
         switch (anim)
         {
             case Animation.Idle:
-
-                startTime = Time.time;
+               
+                cs.lookTarget = false;
+                //startTime = Time.time;
                 anim = Animation.Moving;
+
+                transform.forward = Camera.main.transform.forward;
+
+                transform.position = target.transform.position;
+
+                zoomPoint = target.transform.position + target.transform.forward * zoomPosOffset.y +
+                    target.transform.right * zoomPosOffset.x;
 
                 break;
 
             case Animation.Moving:
 
-                float timer = (Time.time - startTime) / timeDuration;
-                timer = Mathf.Clamp01(timer);
-
-                Vector3 zoomPoint = (target.transform.position + target.transform.forward)* 2.0f;
+                //float timer = (Time.time - startTime) / timeDuration;
+                //timer = Mathf.Clamp01(timer);
 
                 transform.position =
-                    Vector3.Lerp(transform.position, zoomPoint, timer * zoomSpeed);
+                    Vector3.Lerp(transform.position, zoomPoint, Time.deltaTime * zoomSpeed);
 
-
-                if (Vector3.Distance(transform.position,zoomPoint) >= 0.01f)
+                if (Vector3.Distance(transform.position, zoomPoint) <= 0.01f)
                 {
                     anim = Animation.Target;
-                    startTime = 0;
+                    //startTime = 0;
                 }
 
                 break;
 
             case Animation.Target:
 
-                Vector3 pos = target.transform.position + target.transform.forward * 2.0f;
+                cs.gameObject.transform.forward = transform.forward;
+                
+                Vector3 pos = target.transform.position + target.transform.forward * zoomPosOffset.y +
+                    target.transform.right * zoomPosOffset.x;
 
                 transform.position = pos;
 

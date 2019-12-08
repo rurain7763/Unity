@@ -3,6 +3,7 @@
 public class CameraScript : MonoBehaviour
 {
     FollowCam followCam;
+    public bool lookTarget = true;
 
     public FollowCam FollowCam
     {
@@ -22,14 +23,17 @@ public class CameraScript : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
     void LateUpdate()
     {
         FollowCameraPoint();
 
-        transform.LookAt(followCam.target);
-        transform.eulerAngles = new Vector3(transform.eulerAngles.x,
-            transform.eulerAngles.y, 0);
+        if (lookTarget)
+        {
+            transform.LookAt(followCam.target);
+
+            transform.eulerAngles = new Vector3(transform.eulerAngles.x,
+                transform.eulerAngles.y, 0);
+        }
 
     }
 
